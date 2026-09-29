@@ -44,16 +44,3 @@ def route_after_policy(
     if agent == "compensation":
         return "compensation_agent"
     return "rebooking_agent"
-
-
-def route_after_rebooking(
-    state: RebookingState,
-) -> Literal["tools", "policy_checker"]:
-    """If the last AI message still has tool calls, go to ToolNode; else policy."""
-    messages = state.get("messages") or []
-    if not messages:
-        return "policy_checker"
-    last = messages[-1]
-    if getattr(last, "tool_calls", None):
-        return "tools"
-    return "policy_checker"
