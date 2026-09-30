@@ -130,20 +130,22 @@ pip install -r requirements.txt
 copy .env.example .env   # then set GOOGLE_API_KEY
 ```
 
-Requires a Gemini API key (`GOOGLE_API_KEY` or `GEMINI_API_KEY`). Optional: `GEMINI_MODEL` (default `gemini-2.0-flash`).
+Requires a Gemini API key (`GOOGLE_API_KEY` or `GEMINI_API_KEY`). Optional: `GEMINI_MODEL` (default `gemini-2.5-flash`).
 
 ## Run
 
-Single request:
-
 ```bash
-python main.py --booking-ref XK9L2P --thread-id passenger-XK9L2P --message "My flight to Dubai was cancelled. I need to be there by tomorrow noon."
+pip install -r requirements.txt
+streamlit run ui.py
 ```
 
-All evaluation scenarios (including Scenario 1 follow-up):
+Open the browser UI and click **Run** on a scenario (booking + message are filled automatically).
+Scenario 1b is a follow-up: run Scenario 1 first, then 1b on the same thread.
+
+Optional CLI one-off:
 
 ```bash
-python run_scenarios.py
+python main.py
 ```
 
 Results are printed and saved under `scenario_outputs/`.
@@ -182,9 +184,8 @@ docs/graph.mmd          # Generated Mermaid
 tests/test_policy.py    # Deterministic policy tests
 ```
 
-## Design notes
+## Bonus: human-in-the-loop
 
-- Prompts stay in `src/prompts.py`; graph wiring stays in `src/graph.py`.
-- Policy is deterministic Python so pass/fail does not depend on the LLM.
-- Mock tools return fixed data so the same booking_ref always yields the same catalogue.
-- No API keys are committed; use `.env` locally.
+Refund or compensation **over $300** pauses at `supervisor_approval` via LangGraph `interrupt()`.
+Resume from the UI with Approve / Reject (`Command(resume=...)`).
+Rejection goes to Escalation, then Final response.

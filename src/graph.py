@@ -12,8 +12,13 @@ from src.nodes import (
     rebooking_agent,
     refund_agent,
     request_classifier,
+    supervisor_approval,
 )
-from src.routing import route_after_classifier, route_after_policy
+from src.routing import (
+    route_after_classifier,
+    route_after_policy,
+    route_after_supervisor,
+)
 from src.state import RebookingState
 from src.tools import REBOOKING_TOOLS
 
@@ -27,6 +32,7 @@ def build_graph(checkpointer: MemorySaver | None = None):
     graph.add_node("refund_agent", refund_agent)
     graph.add_node("compensation_agent", compensation_agent)
     graph.add_node("policy_checker", policy_checker)
+    graph.add_node("supervisor_approval", supervisor_approval)
     graph.add_node("escalation", escalation_agent)
     graph.add_node("final_response", final_response_agent)
 
@@ -58,9 +64,19 @@ def build_graph(checkpointer: MemorySaver | None = None):
         route_after_policy,
         {
             "final_response": "final_response",
+            "supervisor_approval": "supervisor_approval",
             "rebooking_agent": "rebooking_agent",
             "refund_agent": "refund_agent",
             "compensation_agent": "compensation_agent",
+            "escalation": "escalation",
+        },
+    )
+
+    graph.add_conditional_edges(
+        "supervisor_approval",
+        route_after_supervisor,
+        {
+            "final_response": "final_response",
             "escalation": "escalation",
         },
     )

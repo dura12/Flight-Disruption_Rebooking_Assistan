@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import json
 from typing import Any
 
@@ -73,26 +71,12 @@ BOOKINGS: dict[str, dict[str, Any]] = {
     },
 }
 
-
-FARE_RULES: dict[str, dict[str, Any]] = {
-    "flex": {
-        "fare_type": "flex",
-        "refundable": True,
-        "tax_amount_note": "Taxes are always refundable",
-        "refund_on_airline_cancel": "full_fare",
-        "refund_on_passenger_choice": "full_fare",
-    },
-    "basic": {
-        "fare_type": "basic",
-        "refundable": False,
-        "tax_amount_note": "Only taxes refundable on passenger-initiated cancel",
-        "refund_on_airline_cancel": "full_fare",
-        "refund_on_passenger_choice": "taxes_only",
-    },
+FARE_RULES = {
+    "flex": {"fare_type": "flex", "refundable": True},
+    "basic": {"fare_type": "basic", "refundable": False},
 }
 
-
-FLIGHT_SEARCH: dict[tuple[str, str], list[dict[str, Any]]] = {
+FLIGHT_SEARCH = {
     ("LHR", "DXB"): [
         {
             "flight_number": "EK004",
@@ -174,40 +158,29 @@ FLIGHT_SEARCH: dict[tuple[str, str], list[dict[str, Any]]] = {
 
 @tool
 def get_booking(booking_ref: str) -> str:
-    """Look up a passenger booking by reference. Returns passenger, route, cabin, fare, disruption."""
+    """Look up a passenger booking by reference."""
     booking = BOOKINGS.get(booking_ref.upper())
     if not booking:
-        return json.dumps({"error": f"No booking found for reference {booking_ref}"})
+        return json.dumps({"error": f"No booking found for {booking_ref}"})
     return json.dumps(booking)
 
 
 @tool
 def search_flights(origin: str, destination: str, date: str) -> str:
-    """Search alternative flights for a route on a given date (YYYY-MM-DD)."""
-    key = (origin.upper(), destination.upper())
-    flights = FLIGHT_SEARCH.get(key, [])
-    payload = {
-        "origin": origin.upper(),
-        "destination": destination.upper(),
-        "date": date,
-        "flights": flights,
-        "count": len(flights),
-    }
-    if not flights:
-        payload["message"] = "No flights found for this route in the mock catalogue."
-    return json.dumps(payload)
+    """Search alternative flights for a route and date."""
+    flights = FLIGHT_SEARCH.get((origin.upper(), destination.upper()), [])
+    return json.dumps({"flights": flights, "count": len(flights), "date": date})
 
 
 @tool
 def get_fare_rules(fare_type: str) -> str:
-    """Return refundability rules and tax notes for a fare type."""
+    """Return refund rules for a fare type."""
     rules = FARE_RULES.get(fare_type.lower())
     if not rules:
         return json.dumps({"error": f"Unknown fare type: {fare_type}"})
     return json.dumps(rules)
 
 
-ALL_TOOLS = [get_booking, search_flights, get_fare_rules]
 REBOOKING_TOOLS = [get_booking, search_flights]
 REFUND_TOOLS = [get_booking, get_fare_rules]
 COMPENSATION_TOOLS = [get_booking]
