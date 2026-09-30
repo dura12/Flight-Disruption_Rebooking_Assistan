@@ -1,5 +1,3 @@
-"""CLI entrypoint: run a single request or export the Mermaid diagram."""
-
 from __future__ import annotations
 
 import argparse
@@ -40,29 +38,29 @@ def run_once(
 ) -> dict:
     app = graph or build_graph()
     config = {"configurable": {"thread_id": thread_id}}
-    result = app.invoke(
+    return app.invoke(
         initial_state(request_id, booking_ref, message),
         config=config,
     )
-    return result
 
 
 def follow_up(message: str, thread_id: str, graph=None) -> dict:
-    """Continue an existing conversation — reuses checkpointed state."""
     app = graph or build_graph()
     config = {"configurable": {"thread_id": thread_id}}
-    result = app.invoke(
+    return app.invoke(
         {"messages": [HumanMessage(content=message)]},
         config=config,
     )
-    return result
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Flight Disruption Rebooking Assistant")
     parser.add_argument("--request-id", default="R-7702")
     parser.add_argument("--booking-ref", default="XK9L2P")
-    parser.add_argument("--message", default="My flight to Dubai was cancelled. I need to be there by tomorrow noon.")
+    parser.add_argument(
+        "--message",
+        default="My flight to Dubai was cancelled. I need to be there by tomorrow noon.",
+    )
     parser.add_argument("--thread-id", default="passenger-XK9L2P")
     parser.add_argument("--diagram", action="store_true", help="Write Mermaid diagram and exit")
     parser.add_argument("--diagram-out", default="docs/graph.mmd")

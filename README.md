@@ -127,10 +127,10 @@ python -m venv .venv
 source .venv/bin/activate
 
 pip install -r requirements.txt
-copy .env.example .env   # then set OPENAI_API_KEY
+copy .env.example .env   # then set GOOGLE_API_KEY
 ```
 
-Requires an OpenAI-compatible API key (`OPENAI_API_KEY`). Optional: `OPENAI_MODEL` (default `gpt-4o-mini`).
+Requires a Gemini API key (`GOOGLE_API_KEY` or `GEMINI_API_KEY`). Optional: `GEMINI_MODEL` (default `gemini-2.0-flash`).
 
 ## Run
 

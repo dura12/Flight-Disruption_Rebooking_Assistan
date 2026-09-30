@@ -1,5 +1,3 @@
-"""Mock airline tools that return fixed fake data for deterministic scenarios."""
-
 from __future__ import annotations
 
 import json
@@ -8,12 +6,7 @@ from typing import Any
 from langchain_core.tools import tool
 
 
-# ---------------------------------------------------------------------------
-# Fixed booking catalogue (keyed by booking reference)
-# ---------------------------------------------------------------------------
-
 BOOKINGS: dict[str, dict[str, Any]] = {
-    # Scenario 1 / follow-up: cancelled DXB, economy, refundable fare
     "XK9L2P": {
         "booking_ref": "XK9L2P",
         "passenger_name": "Alex Morgan",
@@ -30,7 +23,6 @@ BOOKINGS: dict[str, dict[str, Any]] = {
         "delay_hours": 0.0,
         "status": "cancelled",
     },
-    # Scenario 2: 6-hour delay, compensation request
     "DL6H01": {
         "booking_ref": "DL6H01",
         "passenger_name": "Sam Rivera",
@@ -47,7 +39,6 @@ BOOKINGS: dict[str, dict[str, Any]] = {
         "delay_hours": 6.0,
         "status": "delayed",
     },
-    # Scenario 3: cancelled, economy — search only returns business (policy fail loop)
     "BZONLY1": {
         "booking_ref": "BZONLY1",
         "passenger_name": "Jordan Lee",
@@ -64,7 +55,6 @@ BOOKINGS: dict[str, dict[str, Any]] = {
         "delay_hours": 0.0,
         "status": "cancelled",
     },
-    # Scenario 4: complaint (booking still available for context)
     "CMPL01": {
         "booking_ref": "CMPL01",
         "passenger_name": "Casey Brooks",
@@ -102,8 +92,6 @@ FARE_RULES: dict[str, dict[str, Any]] = {
 }
 
 
-# Search results keyed by (origin, destination) for determinism.
-# BZONLY1 / CDG-JFK returns only business class so policy retries can be tested.
 FLIGHT_SEARCH: dict[tuple[str, str], list[dict[str, Any]]] = {
     ("LHR", "DXB"): [
         {
@@ -127,7 +115,6 @@ FLIGHT_SEARCH: dict[tuple[str, str], list[dict[str, Any]]] = {
             "seats_available": 4,
         },
         {
-            # Policy breaker: business only upgrade (higher cabin than booked)
             "flight_number": "EK008",
             "origin": "LHR",
             "destination": "DXB",
@@ -140,7 +127,6 @@ FLIGHT_SEARCH: dict[tuple[str, str], list[dict[str, Any]]] = {
     ],
     ("CDG", "JFK"): [
         {
-            # Only options break policy: business cabin (original is economy)
             "flight_number": "AF010",
             "origin": "CDG",
             "destination": "JFK",
@@ -151,7 +137,6 @@ FLIGHT_SEARCH: dict[tuple[str, str], list[dict[str, Any]]] = {
             "seats_available": 3,
         },
         {
-            # Also breaks: short connection under 60 minutes
             "flight_number": "AF012",
             "origin": "CDG",
             "destination": "JFK",
@@ -162,7 +147,6 @@ FLIGHT_SEARCH: dict[tuple[str, str], list[dict[str, Any]]] = {
             "seats_available": 1,
         },
         {
-            # Breaks: departs more than 48h after original
             "flight_number": "AF014",
             "origin": "CDG",
             "destination": "JFK",
@@ -190,10 +174,7 @@ FLIGHT_SEARCH: dict[tuple[str, str], list[dict[str, Any]]] = {
 
 @tool
 def get_booking(booking_ref: str) -> str:
-    """Look up a passenger booking by reference.
-
-    Returns passenger name, route, cabin class, fare type, and disruption details.
-    """
+    """Look up a passenger booking by reference. Returns passenger, route, cabin, fare, disruption."""
     booking = BOOKINGS.get(booking_ref.upper())
     if not booking:
         return json.dumps({"error": f"No booking found for reference {booking_ref}"})
@@ -202,11 +183,7 @@ def get_booking(booking_ref: str) -> str:
 
 @tool
 def search_flights(origin: str, destination: str, date: str) -> str:
-    """Search alternative flights for a route on a given date (YYYY-MM-DD).
-
-    Returns a list of flights with times, cabin availability and connections.
-    The date argument is accepted for API realism; mock data is keyed by route.
-    """
+    """Search alternative flights for a route on a given date (YYYY-MM-DD)."""
     key = (origin.upper(), destination.upper())
     flights = FLIGHT_SEARCH.get(key, [])
     payload = {

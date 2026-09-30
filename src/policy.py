@@ -1,9 +1,7 @@
-"""Airline policy rules — plain Python, no LLM."""
-
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Optional
+from typing import Optional
 
 from src.state import BookingDetails, ProposedSolution
 
@@ -72,12 +70,10 @@ def check_refund_policy(
     disruption = (booking.get("disruption_type") or "").lower()
     fare_type = (booking.get("fare_type") or "basic").lower()
 
-    # Airline cancelled / delayed disruption → full fare
     if disruption in {"cancelled", "delayed"}:
         expected = fare
         reason = "airline disruption → full fare"
     else:
-        # Passenger choice
         if fare_type == "flex" or booking.get("fare_type") == "refundable":
             expected = fare
             reason = "passenger choice on refundable fare → full fare"
@@ -126,7 +122,6 @@ def evaluate_policy(
     booking: Optional[BookingDetails],
     solution: Optional[ProposedSolution],
 ) -> tuple[bool, str]:
-    """Apply the policy rules for the proposed solution type."""
     if not solution:
         return False, "No proposed solution to check."
     if not booking:
@@ -142,7 +137,6 @@ def evaluate_policy(
     return False, f"Unknown solution type: {sol_type}"
 
 
-# Convenience export of the rule table for the README / docs
 POLICY_RULES: dict[str, str] = {
     "rebook": (
         "Same cabin class or lower; departs within 48 hours of original; "

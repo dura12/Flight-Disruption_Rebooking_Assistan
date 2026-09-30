@@ -1,5 +1,3 @@
-"""Deterministic policy tests — no LLM required."""
-
 from __future__ import annotations
 
 import unittest

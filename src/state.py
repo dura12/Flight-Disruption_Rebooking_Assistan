@@ -1,5 +1,3 @@
-"""Shared typed state for the disruption rebooking graph."""
-
 from __future__ import annotations
 
 from typing import Annotated, Any, Literal, Optional, TypedDict
@@ -45,42 +43,17 @@ class ProposedSolution(TypedDict, total=False):
 
 
 class RebookingState(TypedDict):
-    """State shared by every node in the graph.
-
-    Each node updates only the fields it owns:
-    - classifier: intent, constraints, active_agent
-    - specialist agents: booking, proposed_solution, messages
-    - policy checker: policy_passed, policy_failure_reason, retry_count
-    - escalation: escalated, escalation_note
-    - final response: final_response, messages
-    """
-
-    # Intake / identity
     request_id: str
     booking_ref: str
-
-    # Conversation history (reducer appends new messages)
     messages: Annotated[list[BaseMessage], add_messages]
-
-    # Classification
     intent: Optional[Intent]
     constraints: PassengerConstraints
     active_agent: Optional[ActiveAgent]
-
-    # Booking context loaded via tools / agents
     booking: Optional[BookingDetails]
-
-    # Solution under review
     proposed_solution: Optional[ProposedSolution]
-
-    # Policy enforcement
     policy_passed: Optional[bool]
     policy_failure_reason: Optional[str]
     retry_count: int
-
-    # Escalation
     escalated: bool
     escalation_note: Optional[str]
-
-    # Passenger-facing reply
     final_response: Optional[str]

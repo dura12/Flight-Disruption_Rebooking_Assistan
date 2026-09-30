@@ -1,5 +1,3 @@
-"""LLM prompts kept separate from graph logic."""
-
 CLASSIFIER_SYSTEM = """You are an airline request classifier for disruption cases.
 Read the passenger message and extract:
 - intent: one of rebook, refund, compensation, complaint

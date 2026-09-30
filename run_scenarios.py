@@ -1,5 +1,3 @@
-"""Run the four evaluation scenarios plus the Scenario 1 follow-up."""
-
 from __future__ import annotations
 
 import json
@@ -10,7 +8,6 @@ from pathlib import Path
 from langchain_core.messages import HumanMessage
 from langgraph.checkpoint.memory import MemorySaver
 
-# Ensure project root is on sys.path when run as a script
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
@@ -38,7 +35,6 @@ def _base(request_id: str, booking_ref: str, message: str) -> dict:
 
 
 def _path_summary(result: dict) -> list[str]:
-    """Infer a human-readable path from final state fields."""
     intent = result.get("intent")
     steps = ["Classifier"]
     if intent == "complaint":
@@ -66,8 +62,10 @@ def _print_result(title: str, result: dict) -> None:
     print(title)
     print("=" * 72)
     print("Path:", " → ".join(_path_summary(result)))
-    print(f"intent={result.get('intent')}  retries={result.get('retry_count')}  "
-          f"policy_passed={result.get('policy_passed')}  escalated={result.get('escalated')}")
+    print(
+        f"intent={result.get('intent')}  retries={result.get('retry_count')}  "
+        f"policy_passed={result.get('policy_passed')}  escalated={result.get('escalated')}"
+    )
     if result.get("proposed_solution"):
         print("Proposed:", json.dumps(result["proposed_solution"], default=str)[:500])
     if result.get("policy_failure_reason"):
@@ -79,14 +77,12 @@ def run_all() -> dict:
     checkpointer = MemorySaver()
     app = build_graph(checkpointer=checkpointer)
 
-    # Persist diagram next to outputs
     docs = ROOT / "docs"
     docs.mkdir(exist_ok=True)
     (docs / "graph.mmd").write_text(export_mermaid(app), encoding="utf-8")
 
     outputs: dict = {"ran_at": datetime.now(timezone.utc).isoformat(), "scenarios": {}}
 
-    # --- Scenario 1 ---
     s1_thread = "scenario-1-XK9L2P"
     s1 = app.invoke(
         _base(
@@ -113,7 +109,6 @@ def run_all() -> dict:
         "booking_ref_in_state": (s1.get("booking") or {}).get("booking_ref"),
     }
 
-    # --- Scenario 1 follow-up (same thread_id) ---
     s1b = app.invoke(
         {"messages": [HumanMessage(content="Actually, can I get a refund instead?")]},
         config={"configurable": {"thread_id": s1_thread}},
@@ -132,7 +127,6 @@ def run_all() -> dict:
         "final_response": s1b.get("final_response"),
     }
 
-    # --- Scenario 2 ---
     s2 = app.invoke(
         _base(
             "R-8801",
@@ -154,7 +148,6 @@ def run_all() -> dict:
         "final_response": s2.get("final_response"),
     }
 
-    # --- Scenario 3 ---
     s3 = app.invoke(
         _base(
             "R-9903",
@@ -177,7 +170,6 @@ def run_all() -> dict:
         "final_response": s3.get("final_response"),
     }
 
-    # --- Scenario 4 ---
     s4 = app.invoke(
         _base(
             "R-1104",

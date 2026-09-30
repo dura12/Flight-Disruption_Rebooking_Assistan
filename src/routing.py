@@ -1,5 +1,3 @@
-"""Conditional routing helpers for the disruption graph."""
-
 from __future__ import annotations
 
 from typing import Literal
@@ -34,7 +32,6 @@ def route_after_policy(
     if state.get("policy_passed"):
         return "final_response"
 
-    # retry_count is incremented on each failure inside policy_checker
     if int(state.get("retry_count") or 0) > MAX_POLICY_RETRIES:
         return "escalation"
 

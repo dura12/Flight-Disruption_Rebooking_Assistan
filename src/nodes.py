@@ -1,5 +1,3 @@
-"""Graph nodes: classifier, specialists, policy, escalation, final response."""
-
 from __future__ import annotations
 
 import json
@@ -28,11 +26,6 @@ from src.tools import (
 )
 
 
-# ---------------------------------------------------------------------------
-# Structured classifier output
-# ---------------------------------------------------------------------------
-
-
 class ClassifierOutput(BaseModel):
     intent: Literal["rebook", "refund", "compensation", "complaint"]
     latest_arrival: Optional[str] = Field(
@@ -44,12 +37,10 @@ class ClassifierOutput(BaseModel):
 
 
 def _extract_json_block(text: str) -> Optional[dict[str, Any]]:
-    """Pull the last fenced or bare JSON object from an agent reply."""
     if not text:
         return None
     fenced = re.findall(r"```(?:json)?\s*(\{.*?\})\s*```", text, flags=re.DOTALL)
     candidates = fenced or re.findall(r"(\{[^{}]*\"type\"[^{}]*\})", text, flags=re.DOTALL)
-    # Prefer greedy last object
     if not candidates:
         match = re.search(r"\{.*\}", text, flags=re.DOTALL)
         if match:
@@ -81,13 +72,7 @@ def _booking_from_tool_messages(messages: list) -> Optional[dict[str, Any]]:
     return None
 
 
-# ---------------------------------------------------------------------------
-# Nodes
-# ---------------------------------------------------------------------------
-
-
 def request_classifier(state: RebookingState) -> dict[str, Any]:
-    """Classify passenger intent with structured output and set active_agent."""
     llm = get_llm().with_structured_output(ClassifierOutput)
     passenger_msg = _last_human_text(state)
     result: ClassifierOutput = llm.invoke(
@@ -114,11 +99,10 @@ def request_classifier(state: RebookingState) -> dict[str, Any]:
         "refund": "refund",
         "compensation": "compensation",
     }
-    updates: dict[str, Any] = {
+    return {
         "intent": intent,
         "constraints": constraints,
         "active_agent": active_map.get(intent),
-        # Fresh specialist turn after re-classification
         "policy_passed": None,
         "policy_failure_reason": None,
         "retry_count": 0,
@@ -135,11 +119,9 @@ def request_classifier(state: RebookingState) -> dict[str, Any]:
             )
         ],
     }
-    return updates
 
 
 def rebooking_agent(state: RebookingState) -> dict[str, Any]:
-    """LLM + tools: propose one replacement flight."""
     llm = get_llm().bind_tools(REBOOKING_TOOLS)
     failure = state.get("policy_failure_reason")
     context = (
@@ -166,7 +148,6 @@ def rebooking_agent(state: RebookingState) -> dict[str, Any]:
     if booking:
         updates["booking"] = booking
 
-    # If the model finished without tool calls, parse the proposal
     if not getattr(response, "tool_calls", None):
         parsed = _extract_json_block(str(response.content))
         if parsed and parsed.get("type") == "rebook":
@@ -211,7 +192,6 @@ def _default_compensation(booking: dict[str, Any]) -> dict[str, Any]:
 
 
 def refund_agent(state: RebookingState) -> dict[str, Any]:
-    """Propose a refund amount using booking + fare rules tools."""
     llm = get_llm().bind_tools(REFUND_TOOLS)
     failure = state.get("policy_failure_reason")
     context = f"booking_ref={state.get('booking_ref')}\n"
@@ -277,7 +257,6 @@ def refund_agent(state: RebookingState) -> dict[str, Any]:
 
 
 def compensation_agent(state: RebookingState) -> dict[str, Any]:
-    """Propose compensation from delay / cancellation details."""
     llm = get_llm().bind_tools(COMPENSATION_TOOLS)
     failure = state.get("policy_failure_reason")
     context = f"booking_ref={state.get('booking_ref')}\n"
@@ -346,9 +325,7 @@ def compensation_agent(state: RebookingState) -> dict[str, Any]:
 
 
 def policy_checker(state: RebookingState) -> dict[str, Any]:
-    """Plain Python policy enforcement — no LLM."""
     booking = state.get("booking")
-    # Hydrate booking from mock tool if an agent skipped it
     if not booking and state.get("booking_ref"):
         raw = get_booking.invoke({"booking_ref": state["booking_ref"]})
         try:
@@ -370,7 +347,6 @@ def policy_checker(state: RebookingState) -> dict[str, Any]:
 
 
 def escalation_agent(state: RebookingState) -> dict[str, Any]:
-    """Write a short human-agent handover note."""
     llm = get_llm()
     payload = {
         "request_id": state.get("request_id"),
@@ -397,7 +373,6 @@ def escalation_agent(state: RebookingState) -> dict[str, Any]:
 
 
 def final_response_agent(state: RebookingState) -> dict[str, Any]:
-    """Compose the passenger-facing reply."""
     llm = get_llm()
     payload = {
         "intent": state.get("intent"),

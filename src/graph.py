@@ -1,5 +1,3 @@
-"""LangGraph assembly: StateGraph, ToolNode, checkpointer, conditional edges."""
-
 from __future__ import annotations
 
 from langgraph.checkpoint.memory import MemorySaver
@@ -21,17 +19,6 @@ from src.tools import REBOOKING_TOOLS
 
 
 def build_graph(checkpointer: MemorySaver | None = None):
-    """Compile the disruption assistant graph.
-
-    Nodes (8):
-      request_classifier, rebooking_agent, tools, refund_agent,
-      compensation_agent, policy_checker, escalation, final_response
-
-    Conditional routing (3 custom + tools_condition):
-      1. After classifier → specialist or escalation
-      2. After rebooking → tools loop or policy (also via tools_condition)
-      3. After policy → pass / retry same agent / escalate
-    """
     graph = StateGraph(RebookingState)
 
     graph.add_node("request_classifier", request_classifier)
@@ -56,13 +43,11 @@ def build_graph(checkpointer: MemorySaver | None = None):
         },
     )
 
-    # Rebooking ⇄ ToolNode loop via tools_condition; when done → policy_checker
     graph.add_conditional_edges(
         "rebooking_agent",
         tools_condition,
         {"tools": "tools", END: "policy_checker"},
     )
-    # After tools, always return to rebooking agent (tool loop)
     graph.add_edge("tools", "rebooking_agent")
 
     graph.add_edge("refund_agent", "policy_checker")
@@ -88,5 +73,4 @@ def build_graph(checkpointer: MemorySaver | None = None):
 
 
 def export_mermaid(compiled) -> str:
-    """Return the Mermaid diagram source for the compiled graph."""
     return compiled.get_graph().draw_mermaid()
